@@ -1,0 +1,2744 @@
+local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/jensonhirst/Orion/main/source')))()
+local Window = OrionLib:MakeWindow({Name = "ＳｃａｒFｅ Ｐｒｉｖａｄｏ : Ｖ.1 By Shadow", HidePremium = false, SaveConfig = true, ConfigFolder = "OrionTest"})
+
+-- Lista de seleção de jogadores para "Goto"
+local gotoPlayerList = {}
+local selectedGotoPlayer = nil
+local avisoToggle = false
+
+local function updatePlayerList()
+gotoPlayerList = {}
+for _, player in ipairs(game.Players:GetPlayers()) do
+table.insert(gotoPlayerList, player.Name)
+end
+end
+
+updatePlayerList()
+
+-- Adicionar um ListPlayer para selecionar o jogador alvo para "Goto"
+local Tab = Window:MakeTab({
+Name = "Players | Brookhaven",
+Icon = "rbxassetid://4483345998",
+PremiumOnly = false
+})
+
+Tab:AddDropdown({
+Name = "Lista de Jogadores",
+Description = "Selecione o jogador alvo para o Goto (couch)",
+Options = gotoPlayerList,
+Callback = function(playerName)
+selectedGotoPlayer = playerName
+end
+})
+
+-- Adicionar botão para resetar a lista de jogadores
+Tab:AddButton({
+Name = "Reset Player List",
+Callback = function()
+updatePlayerList()
+playerDropdown:Refresh(gotoPlayerList, true)
+end
+})
+
+-- Adicionar toggle para view
+Tab:AddToggle({
+Name = "View",
+Default = false,
+Callback = function(state)
+viewToggle = state
+if viewToggle and selectedGotoPlayer then
+local player = game.Players:FindFirstChild(selectedGotoPlayer)
+if player then
+game.Workspace.CurrentCamera.CameraSubject = player.Character.Humanoid
+else
+print("Jogador não encontrado.")
+end
+else
+game.Workspace.CurrentCamera.CameraSubject = game.Players.LocalPlayer.Character.Humanoid
+end
+end
+})
+
+-- Adicionar toggle para follow
+Tab:AddToggle({
+Name = "Follow",
+Default = false,
+Callback = function(state)
+followToggle = state
+while followToggle do
+if selectedGotoPlayer then
+local player = game.Players:FindFirstChild(selectedGotoPlayer)
+if player then
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+else
+print("Jogador não encontrado.")
+end
+end
+wait(0.1)
+end
+end
+})
+
+-- Adicionar o botão "Goto" à seção "View/Goto"
+Tab:AddButton({
+Name = "Goto",
+Description = "This player is not on the list",
+Callback = function()
+if selectedGotoPlayer then
+local player = game.Players:FindFirstChild(selectedGotoPlayer)
+if player then
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+else
+print("Jogador não encontrado.")
+end
+else
+print("Nenhum jogador selecionado para o Goto.")
+end
+end
+})
+
+-- Conectar eventos de jogador removido
+game.Players.PlayerRemoving:Connect(function(player)
+updatePlayerList()
+if avisoToggle then
+OrionLib:MakeNotification({
+Name = "Aviso",
+Content = player.Name .. " saiu do jogo",
+Image = "rbxassetid://4483345998",
+Time = 5
+})
+end
+end)
+
+-- Conectar eventos de jogador adicionado
+game.Players.PlayerAdded:Connect(function(player)
+updatePlayerList()
+if avisoToggle then
+OrionLib:MakeNotification({
+Name = "Aviso",
+Content = player.Name .. " entrou no jogo",
+Image = "rbxassetid://4483345998",
+Time = 5
+})
+end
+end)
+
+-- Função para manter a lista de jogadores atualizada
+local function maintainPlayerList()
+while wait(1) do
+updatePlayerList()
+end
+end
+
+-- Iniciar a função de manutenção da lista de jogadores
+spawn(maintainPlayerList)
+
+-- Adicionar toggle para avisos
+Tab:AddToggle({
+Name = "Avisos",
+Default = false,
+Callback = function(state)
+avisoToggle = state
+end
+})
+
+local Section = Tab:AddSection({
+Name = "MATAR JOGADOR"
+})
+local selectedKillAdvancedPlayer = nil
+local couchEquipped = false
+
+local function killAdvancedPlayer()
+if selectedKillAdvancedPlayer then
+local player = game.Players:FindFirstChild(selectedKillAdvancedPlayer)
+if player then
+-- Equipa o item 'Couch' no inventário se ainda não estiver equipado
+local backpack = game.Players.LocalPlayer.Backpack
+if backpack and not couchEquipped then
+local couch = backpack:FindFirstChild("Couch")
+if couch then
+game.Players.LocalPlayer.Character.Humanoid:EquipTool(couch)
+couchEquipped = true
+else
+print("O item 'Couch' não foi encontrado no seu inventário.")
+end
+end
+
+-- Looping de teleportes no jogador selecionado da lista
+while true do
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = player.Character.HumanoidRootPart.CFrame
+wait(0.0) -- Intervalo entre cada teleporte, ajuste conforme necessário
+
+-- Verifica se o jogador sentou no 'Couch' e realiza o teleporte para o céu
+if player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.SeatPart then
+player.Character.HumanoidRootPart.CFrame = CFrame.new(0, 0, 0) -- Teleporta para cima
+wait(0.0) -- Espera um pouco antes de teleportar de volta para evitar bugs
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 0, 0) -- Teleporta para cima novamente
+wait(0.0) -- Espera um pouco antes de teleportar de volta para evitar bugs
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(649.78, -439.87, 126.35) -- Teleporta de volta para a posição original
+break -- Sai do loop após teleportar de volta
+end
+end
+
+-- Remove o item 'Couch' da mão do jogador após o teleporte para o céu
+if couchEquipped then
+local backpack = game.Players.LocalPlayer.Backpack
+if backpack then
+local couch = backpack:FindFirstChild("Couch")
+if couch then
+couch.Parent = nil -- Remove o 'Couch' do inventário
+couchEquipped = false
+end
+end
+end
+else
+print("Jogador não encontrado.")
+end
+else
+print("Nenhum jogador selecionado para o Bring Avançado.")
+end
+end
+
+-- Lista de Players para Bring Avançado
+local killAdvancedPlayerList = {}
+for _, player in ipairs(game.Players:GetPlayers()) do
+table.insert(killAdvancedPlayerList, player.Name)
+end
+
+Tab:AddDropdown({
+Name = "Selecionar Jogador",
+Description = "Selecione o jogador alvo para o Bring Avançado",
+Options = killAdvancedPlayerList,
+Callback = function(playerName)
+selectedKillAdvancedPlayer = playerName
+end
+})
+
+Tab:AddButton({
+Name = "KILL FUNCIONAL (ative A animacão Deite-se)",
+Description = "Equipa o item 'Couch' e teleporta o jogador selecionado",
+Callback = function()
+killAdvancedPlayer()
+end
+})
+
+Tab:AddButton({
+Name = "Kill Player (EM MANUNTENCÃO)",
+Callback = function()
+--Sofá
+local args = {
+[1] = "PickingTools",
+[2] = "Couch"
+}
+
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1Too1l"):InvokeServer(unpack(args))
+
+--kill
+loadstring(game:HttpGet("https://[Log in to view URL]"))()
+end
+})
+
+Tab:AddButton({
+Name = "Void player (CREDITOS. SANDERX)",
+Callback = function()
+loadstring(game:HttpGet('https://[Log in to view URL]'))()
+end
+})
+
+local Tab = Window:MakeTab({
+Name = "Avatar | Brookhaven",
+Icon = "rbxassetid://7743876054",
+PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+Name = "Reset Avatar"
+})
+
+Tab:AddButton({
+Name = "Refresh Character",
+Callback = function()
+local args = {
+[1] = "OCA"
+}
+
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1Avata1rOrigina1l"):FireServer(unpack(args))
+end
+})
+
+local Section = Tab:AddSection({
+Name = "Cheat Players (Troll)"
+})
+
+Tab:AddButton({
+Name = "Assassin",
+Callback = function()
+--Assain
+end
+})
+
+-- Adicionando a nova aba "Trolls"
+local TrollsTab = Window:MakeTab({
+Name = "Trolls | Brookhaven",
+Icon = "rbxassetid://7743876054",
+PremiumOnly = false
+})
+
+local TrollsSection = TrollsTab:AddSection({
+Name = "Troll Players"
+})
+
+TrollsTab:AddButton({
+Name = "Explode Player",
+Description = "Explode o jogador selecionado",
+Callback = function()
+-- Código para explodir o jogador
+end
+})
+
+TrollsTab:AddButton({
+Name = "Freeze Player",
+Description = "Congela o jogador selecionado",
+Callback = function()
+-- Código para congelar o jogador
+end
+})
+
+TrollsTab:AddButton({
+Name = "Shrink Player",
+Description = "Encolhe o jogador selecionado",
+Callback = function()
+-- Código para encolher o jogador
+end
+})
+
+-- Adicionando o toggle para invisibilidade
+TrollsTab:AddToggle({
+Name = "Ficar Invisível",
+Default = false,
+Callback = function(state)
+if state then
+-- Ficar invisível
+local args = {
+[1] = "CharacterSizeDown",
+[2] = 4
+}
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1Clothe1s"):FireServer(unpack(args))
+else
+-- Voltar ao normal
+local args = {
+[1] = "CharacterSizeUp",
+[2] = 1
+}
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1Clothe1s"):FireServer(unpack(args))
+end
+end
+})
+
+-- Adicionando a nova aba "Casa"
+local CasaTab = Window:MakeTab({
+Name = "Casa | Brookhaven",
+Icon = "rbxassetid://7743876054",
+PremiumOnly = false
+})
+
+local CasaSection = CasaTab:AddSection({
+Name = "Permissões de Casa"
+})
+
+local casaNumbers = {}
+for i = 1, 35 do
+if i ~= 8 and i ~= 9 and i ~= 10 then
+table.insert(casaNumbers, tostring(i))
+end
+end
+
+local selectedCasaNumber = nil
+
+CasaTab:AddDropdown({
+Name = "Escolha o número da casa",
+Options = casaNumbers,
+Callback = function(number)
+selectedCasaNumber = tonumber(number)
+end
+})
+
+CasaTab:AddButton({
+Name = "Pegar Permissão",
+Callback = function()
+if selectedCasaNumber then
+local args = {
+[1] = "GivePermissionLoopToServer",
+[2] = game:GetService("Players").LocalPlayer,
+[3] = selectedCasaNumber
+}
+game:GetService("ReplicatedStorage").RE:FindFirstChild("1Playe1rTrigge1rEven1t"):FireServer(unpack(args))
+
+else
+print("Nenhum número de casa selecionado.")
+end
+end
+})
+
+TrollsTab:AddTextbox({
+Name = "Velocidade",
+Default = "",
+TextDisappear = true,
+Callback = function(value)
+local speed = tonumber(value)
+if speed then
+game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = speed
+end
+end
+})
+
+TrollsTab:AddTextbox({
+Name = "Tamanho do Pulo",
+Default = "",
+TextDisappear = true,
+Callback = function(value)
+local jumpHeight = tonumber(value)
+if jumpHeight then
+game.Players.LocalPlayer.Character.Humanoid.JumpPower = jumpHeight
+end
+end
+})
+
+TrollsTab:AddTextbox({
+Name = "Gravidade",
+Default = "",
+TextDisappear = true,
+Callback = function(value)
+local gravity = tonumber(value)
+if gravity then
+workspace.Gravity = gravity
+end
+end
+})
+
+TrollsTab:AddButton({
+Name = "Resetar Velocidade",
+Callback = function()
+game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+end
+})
+
+TrollsTab:AddButton({
+Name = "Resetar Pulo",
+Callback = function()
+game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
+end
+})
+
+TrollsTab:AddButton({
+Name = "Resetar Gravidade",
+Callback = function()
+workspace.Gravity = 196.2
+end
+})
+
+-- Conectar eventos de jogador removido
+game.Players.PlayerRemoving:Connect(function(player)
+updatePlayerList()
+playerDropdown:Refresh(gotoPlayerList, true)
+end)
+
+-- Conectar eventos de jogador adicionado
+game.Players.PlayerAdded:Connect(function(player)
+updatePlayerList()
+playerDropdown:Refresh(gotoPlayerList, true)
+end)
+
+-- Aba Farm Doces
+local FarmDocesTab = Window:MakeTab({
+Name = "Farm Doces | Brookhaven",
+Icon = "rbxassetid://7743876054",
+PremiumOnly = false
+})
+
+FarmDocesTab:AddButton({
+Name = "Farmar Doces",
+Description = "Bruno seu filha da Puta",
+Callback = function()
+loadstring(game:HttpGet("https://rawscripts.net/raw/Brookhaven-RP-Halloween-20853"))()
+end
+})
+
+local TeleportTab = Window:MakeTab({
+Name = "Teleport Casas | Brookhaven",
+Icon = "rbxassetid://4483345998",
+PremiumOnly = false
+})
+
+TeleportTab:AddButton({
+Name = "House 1",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(262, 8, 134)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 2",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(242, 10, 149)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 3",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(220, 8, 180)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 4",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(197, 9, 191)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 5",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(172, 6, 221)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 6",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-43, 21, -137)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 7",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-40, 36, -137)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 11",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-21, 40, 436)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 12",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(155, 37, 433)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 13",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(255, 35, 431)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 14",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(254, 38, 394)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 15",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(148, 39, 387)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 16",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-17, 42, 395)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 17",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-189, 37, -247)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 18",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-354, 37, -244)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 19",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-456, 36, -245)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 20",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-453, 38, -295)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 21",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-356, 38, -294)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 22",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-187, 37, -295)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 23",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-410, 68, -447)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 24",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-348, 69, -496)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 28",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-103, 12, 1087)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 29",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-730, 6, 808)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 30",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-245, 7, 822)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 31",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(639, 76, -361)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 32",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-908, 6, -361)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 33",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-111, 70, -417)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 34",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(230, 38, 569)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 35",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-30, 13, 2209)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 36",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(248, 17, -2324)
+end
+})
+
+TeleportTab:AddButton({
+Name = "House 37",
+Callback = function()
+local player = game.Players.LocalPlayer
+player.Character.HumanoidRootPart.CFrame = CFrame.new(-1946, 38, 327)
+end
+})
+
+local PaineisTab = Window:MakeTab({
+Name = "PAINEIS PARA JOGOS | Universal",
+Icon = "rbxassetid://4483345998",
+PremiumOnly = false
+})
+
+-- Sessão para Combat Warriors
+PaineisTab:AddSection({Name = "Hub para Combat Warriors"})
+
+PaineisTab:AddButton({
+Name = "Combat Warriors Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/IsaaaKK/cwhb/main/cw.txt"))()
+end
+})
+
+-- Sessão para Prison Life
+PaineisTab:AddSection({Name = "Hub para Prison Life"})
+
+PaineisTab:AddButton({
+Name = "Prison Life Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/RegularVynixu/Vynixius/main/Prison%20Life/Script.lua"))()
+end
+})
+
+-- Sessão para Demonfall
+PaineisTab:AddSection({Name = "Hub para Demonfall"})
+
+PaineisTab:AddButton({
+Name = "Demonfall Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/StepBroFurious/Script/main/FuriousFall.lua"))()
+end
+})
+
+-- Sessão para Blox Fruit
+PaineisTab:AddSection({Name = "Hub para Blox Fruit"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruit Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/PNguyen0199/faifao/main/Protected.lua"))()
+end
+})
+
+-- Sessão para Murder Mystery 2
+PaineisTab:AddSection({Name = "Hub para Murder Mystery 2"})
+
+PaineisTab:AddButton({
+Name = "Murder Mystery 2 Script",
+Callback = function()
+loadstring(game:HttpGet("https://jack1214060.xyz/jayhub",true))()
+end
+})
+
+-- Sessão para Скрипт на дождь из фруктов в бф
+PaineisTab:AddSection({Name = "Hub para Скрипт на дождь из фруктов в бф"})
+
+PaineisTab:AddButton({
+Name = "Скрипт на дождь из фруктов в бф",
+Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/UCsB5xC3", true))()
+end
+})
+
+-- Sessão para A One Piece Game
+PaineisTab:AddSection({Name = "Hub para A One Piece Game"})
+
+PaineisTab:AddButton({
+Name = "A One Piece Game Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/1f0yt/community/master/laff"))()
+end
+})
+
+-- Sessão para MM2
+PaineisTab:AddSection({Name = "Hub para MM2"})
+
+PaineisTab:AddButton({
+Name = "MM2 Script",
+Callback = function()
+loadstring(game:HttpGet("https://jack1214060.xyz/jayhub",true))()
+end
+})
+
+-- Sessão para FiveDuels
+PaineisTab:AddSection({Name = "Hub para FiveDuels"})
+
+PaineisTab:AddButton({
+Name = "FiveDuels Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Mp4Boi/NAHJITTRIPPING/main/daddyskitten.lua"))()
+end
+})
+
+-- Sessão para ShiftLock
+PaineisTab:AddSection({Name = "Hub para ShiftLock"})
+
+PaineisTab:AddButton({
+Name = "ShiftLock Script",
+Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/QuzRq57a"))()
+end
+})
+
+-- Sessão para Da Hood
+PaineisTab:AddSection({Name = "Hub para Da Hood"})
+
+PaineisTab:AddButton({
+Name = "Da Hood Script",
+Callback = function()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Levoucher/LevouchiaX/master/LevouchiaXProject'))()
+end
+})
+
+-- Sessão para DOORS
+PaineisTab:AddSection({Name = "Hub para DOORS"})
+
+PaineisTab:AddButton({
+Name = "DOORS Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/mstudio45/MSDOORS/main/MSHUB_Loader.lua",true))()
+end
+})
+
+-- Sessão para Pet Simulator X
+PaineisTab:AddSection({Name = "Hub para Pet Simulator X"})
+
+PaineisTab:AddButton({
+Name = "Pet Simulator X Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Egorikusa/PetSimulatorX/main/BEST_PETSIMX_SCRIPT"))()
+end
+})
+
+-- Sessão para Lucky Blocks Battlegrounds
+PaineisTab:AddSection({Name = "Hub para Lucky Blocks Battlegrounds"})
+
+PaineisTab:AddButton({
+Name = "Lucky Blocks Battlegrounds Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/plutoguy/Tiger-Hub/main/loader.lua"))()
+end
+})
+
+-- Sessão para Breaking Point
+PaineisTab:AddSection({Name = "Hub para Breaking Point"})
+
+PaineisTab:AddButton({
+Name = "Breaking Point Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/H4R7NHacks/Obfuscated/master/Breaking%20Point%20H4R7N%20Hack.lua"))()
+end
+})
+
+-- Sessão para Shindo Life 2
+PaineisTab:AddSection({Name = "Hub para Shindo Life 2"})
+
+PaineisTab:AddButton({
+Name = "Shindo Life 2 Script",
+Callback = function()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/1201for/V.G-Hub/main/V.Ghub'))()
+end
+})
+
+-- Sessão para Vehicle Legends
+PaineisTab:AddSection({Name = "Hub para Vehicle Legends"})
+
+PaineisTab:AddButton({
+Name = "Vehicle Legends Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/aerocontentdeliverynetwork/3456465f7453x447r76h86856233423645756354b/master/loader.lua"))()
+end
+})
+
+-- Sessão para Miner's Haven
+PaineisTab:AddSection({Name = "Hub para Miner's Haven"})
+
+PaineisTab:AddButton({
+Name = "Miner's Haven Script",
+Callback = function()
+loadstring(game:HttpGet('https://scripts.luawl.com/17470/MHHelper.lua'))()
+end
+})
+
+-- Sessão para Ability Wars
+PaineisTab:AddSection({Name = "Hub para Ability Wars"})
+
+PaineisTab:AddButton({
+Name = "Ability Wars Script",
+Callback = function()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/dizyhvh/rbx_scripts/main/ability_wars.lua')))()
+end
+})
+
+-- Sessão para MM2 (novo)
+PaineisTab:AddSection({Name = "Hub para MM2 (novo)"})
+
+PaineisTab:AddButton({
+Name = "MM2 Script (novo)",
+Callback = function()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/MarsQQ/ScriptHubScripts/master/MM2%20Admin%20Panel'),true))()
+end
+})
+
+-- Sessão para Script Hub (No Key)
+PaineisTab:AddSection({Name = "Hub para Script Hub (No Key)"})
+
+PaineisTab:AddButton({
+Name = "Script Hub (No Key)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/uncty/CloudazeHub_Free/main/CloudazeHub",true))()
+end
+})
+
+-- Sessão para Blox Fruit (novo)
+PaineisTab:AddSection({Name = "Hub para Blox Fruit (novo)"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruit Script (novo)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Corrupt2625/pjv/main/000000018.lua"))()
+end
+})
+
+-- Sessão para Bee Swarm Simulator
+PaineisTab:AddSection({Name = "Hub para Bee Swarm Simulator"})
+
+PaineisTab:AddButton({
+Name = "Bee Swarm Simulator Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BadScripters/CloudHub/main/hub"))()
+end
+})
+
+-- Sessão para Doors (novo)
+PaineisTab:AddSection({Name = "Hub para Doors (novo)"})
+
+PaineisTab:AddButton({
+Name = "Doors Script (novo)",
+Callback = function()
+loadstring(game:HttpGet(('https://pastebin.com/raw/R8QMbhzv')))()
+end
+})
+
+-- Sessão para Muscle Legends
+PaineisTab:AddSection({Name = "Hub para Muscle Legends"})
+
+PaineisTab:AddButton({
+Name = "Muscle Legends Script",
+Callback = function()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/ahmadsgamer2/Script--Game/main/Muscle-Legends'),true))()
+end
+})
+
+-- Sessão para Murder Mystery 2 (novo)
+PaineisTab:AddSection({Name = "Hub para Murder Mystery 2 (novo)"})
+
+PaineisTab:AddButton({
+Name = "Murder Mystery 2 Script (novo)",
+Callback = function()
+loadstring(game:GetObjects("rbxassetid://4001118261")[1].Source)()
+end
+})
+
+-- Sessão para Blox Fruits (novo)
+PaineisTab:AddSection({Name = "Hub para Blox Fruits (novo)"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruits Script (novo)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BestScriptEverr/Main-/main/Yujin"))()
+end
+})
+
+-- Sessão para Breaking Point (novo)
+PaineisTab:AddSection({Name = "Hub para Breaking Point (novo)"})
+
+PaineisTab:AddButton({
+Name = "Breaking Point Script (novo)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/H4R7NHacks/Obfuscated/master/Breaking%20Point%20H4R7N%20Hack.lua"))()
+end
+})
+
+-- Sessão para YBA
+PaineisTab:AddSection({Name = "Hub para YBA"})
+
+PaineisTab:AddButton({
+Name = "YBA Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/zakater5/LuaRepo/main/YBA/v3.lua"))()
+end
+})
+
+-- Sessão para The Strongest Battlegrounds
+PaineisTab:AddSection({Name = "Hub para The Strongest Battlegrounds"})
+
+PaineisTab:AddButton({
+Name = "The Strongest Battlegrounds Script",
+Callback = function()
+loadstring(game:HttpGet("https://pastebin.com/raw/6gbWyDrr"))()
+end
+})
+
+-- Sessão para Cloud Hub Stands Awakening
+PaineisTab:AddSection({Name = "Hub para Cloud Hub Stands Awakening"})
+
+PaineisTab:AddButton({
+Name = "Cloud Hub Stands Awakening Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BadScripters/CloudHub/main/hub"))()
+end
+})
+
+-- Sessão para Project Slayers
+PaineisTab:AddSection({Name = "Hub para Project Slayers"})
+
+PaineisTab:AddButton({
+Name = "Project Slayers Script",
+Callback = function()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/ImperorLegend/Shark-Hub-v1/main/Script'),true))()
+end
+})
+
+-- Sessão para Evade
+PaineisTab:AddSection({Name = "Hub para Evade"})
+
+PaineisTab:AddButton({
+Name = "Evade Script",
+Callback = function()
+loadstring(game:HttpGet('https://reddyhub.xyz/loader.html'))()
+end
+})
+
+-- Sessão para Blox Fruit (imbo)
+PaineisTab:AddSection({Name = "Hub para Blox Fruit (imbo)"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruit Script (imbo)",
+Callback = function()
+loadstring(game:HttpGet("https://run.mocky.io/v3/"))()
+end
+})
+
+-- Sessão para Blox Fruits (No Key)
+PaineisTab:AddSection({Name = "Hub para Blox Fruits (No Key)"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruits Script (No Key)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/1f0yt/community/main/BLCK"))()
+end
+})
+
+-- Sessão para Script 134
+PaineisTab:AddSection({Name = "Hub para Script 134"})
+
+PaineisTab:AddButton({
+Name = "Script 134",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/JuninhoOGado/ScriptsSite/main/Script134"))()
+end
+})
+
+-- Sessão para Shindo Life
+PaineisTab:AddSection({Name = "Hub para Shindo Life"})
+
+PaineisTab:AddButton({
+Name = "Shindo Life Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/6Wumpus6/SpyHub/main/ShindoLife", true))()
+end
+})
+
+-- Sessão para Void Hub Blox Fruits
+PaineisTab:AddSection({Name = "Hub para Void Hub Blox Fruits"})
+
+PaineisTab:AddButton({
+Name = "Void Hub Blox Fruits Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Efe0626/VoidHub/main/Script"))()
+end
+})
+
+-- Sessão para Project Slayers (Lazy Hub)
+PaineisTab:AddSection({Name = "Hub para Project Slayers (Lazy Hub)"})
+
+PaineisTab:AddButton({
+Name = "Project Slayers Script (Lazy Hub)",
+Callback = function()
+repeat wait() until game:IsLoaded()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/LioK251/RbScripts/main/lazyhub.lua"))()
+end
+})
+
+-- Sessão para King Legacy
+PaineisTab:AddSection({Name = "Hub para King Legacy"})
+
+PaineisTab:AddButton({
+Name = "King Legacy Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/AdelOnTheTop/Adel-Hub/main/Main.lua"))()
+end
+})
+
+-- Sessão para Car Dealership
+PaineisTab:AddSection({Name = "Hub para Car Dealership"})
+
+PaineisTab:AddButton({
+Name = "Car Dealership Script",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/ToraIsMe2/ToraIsMe2/main/0carsanta", true))()
+end
+})
+
+-- Sessão para Tower Defense Simulator
+PaineisTab:AddSection({Name = "Hub para Tower Defense Simulator"})
+
+PaineisTab:AddButton({
+Name = "Tower Defense Simulator Script",
+Callback = function()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/Nicuse/RobloxScripts/main/TowerDefenseSimulator.lua'))()
+end
+})
+
+-- Sessão para Blox Fruit (Domadic Hub)
+PaineisTab:AddSection({Name = "Hub para Blox Fruit (Domadic Hub)"})
+
+PaineisTab:AddButton({
+Name = "Blox Fruit Script (Domadic Hub)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Domadicoof/Domadicoof/main/Domadichub/NottoGay/Start.ranscript"))()
+end
+})
+
+-- Sessão para Banana Hub Blox Fruit
+PaineisTab:AddSection({Name = "Hub para Banana Hub Blox Fruit"})
+
+PaineisTab:AddButton({
+Name = "Banana Hub Blox Fruit Script",
+Callback = function()
+repeat wait() until game:IsLoaded() and game.Players.LocalPlayer
+getgenv().Key = ''
+loadstring(game:HttpGet("https://raw.githubusercontent.com/obiiyeuem/vthangsitink/main/BananaHub.lua"))()
+end
+})
+
+-- Sessão para Roblox is Unbreakable
+PaineisTab:AddSection({Name = "Hub para Roblox is Unbreakable"})
+
+PaineisTab:AddButton({
+Name = "Roblox is Unbreakable Script",
+Callback = function()
+loadstring(game:HttpGet(('https://raw.githubusercontent.com/XTheMasterX/Scripts/Main/RobloxIsUnbreakableStats'),true))()
+end
+})
+
+-- Sessão para King Legacy (Auto Farm, Auto Raid)
+PaineisTab:AddSection({Name = "Hub para King Legacy (Auto Farm, Auto Raid)"})
+
+PaineisTab:AddButton({
+Name = "King Legacy Script (Auto Farm, Auto Raid)",
+Callback = function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/hajibeza/RIPPER-HUB/main/King%20Leagacy"))()
+end
+})
+
+local GetName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+
+getgenv().spamSoond = false
+getgenv().stopsounds = false
+getgenv().ka = false
+
+function stopSound()
+	while getgenv().stopsounds == true do
+		local class_check = game.IsA
+		local sound = Instance.new('Sound')
+		local sound_stop = sound.Stop
+		local get_descendants = game.GetDescendants
+
+		for i,v in next, get_descendants(game) do 
+			if class_check(v,"Sound") then
+				sound_stop(v)
+			end
+		end
+
+		get_descendants = nil
+		sound:Remove()
+		sound = nil 
+		get_descendants = nil
+		sound_stop = nil
+        task.wait()
+	end
+end
+
+function spamSound()
+	while getgenv().spamSoond == true do
+		local class_check = game.IsA
+		local sound = Instance.new('Sound')
+		local sound_stop = sound.Play
+		local get_descendants = game.GetDescendants
+
+		for i,v in next, get_descendants(game) do 
+			if class_check(v,"Sound") then
+				sound_stop(v)
+			end
+		end
+
+		get_descendants = nil
+		sound:Remove()
+		get_descendants = nil
+		sound_stop = nil
+        task.wait()
+	end
+end
+
+function killAura()
+	spawn(function()
+		while getgenv().ka == true do
+			local Pop = game:GetService("Players"):GetPlayers()
+			for _,player in next,game:GetService'Players':GetPlayers() do
+				if player ~= game:GetService'Players'.LocalPlayer then
+					local args = { [1] = player }
+					local Distance = (player.Character:FindFirstChildOfClass("Part").Position - game.Players.LocalPlayer.Character:FindFirstChildOfClass("Part").Position).magnitude
+				
+					if Distance <= 17 then
+						for player = 1,25 do
+							game:GetService('ReplicatedStorage').meleeEvent:FireServer(unpack(args))
+						end
+					end
+				end 
+			end
+			wait()
+		end
+	end)
+end
+
+local LocalPlrTab = Window:MakeTab({Name = "Player | Prison Life", Icon = "rbxassetid://15862434941",PremiumOnly = false })
+local GunTab = Window:MakeTab({Name = "Guns | Prison Life", Icon = "rbxassetid://15862513462",PremiumOnly = false })
+local TPTab = Window:MakeTab({Name = "Teleport | Prison Life", Icon = "rbxassetid://15841341821",PremiumOnly = false })
+local GameTab = Window:MakeTab({Name = "Game | Prison Life", Icon = "rbxassetid://15885360708",PremiumOnly = false })
+local TeamTab = Window:MakeTab({Name = "Teams | Prison Life", Icon = "rbxassetid://15862677356",PremiumOnly = false })
+local ExploitsTab = Window:MakeTab({Name = "Exploits | Prison Life", Icon = "rbxassetid://15841340999",PremiumOnly = false })
+local InfoTab = Window:MakeTab({Name = "Info", Icon = "rbxassetid://15841490359",PremiumOnly = false })
+
+
+GameTab:AddButton({
+	Name = "Open Gate",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		local args = { [1] = workspace.Prison_ITEMS.buttons:FindFirstChild("Prison Gate"):FindFirstChild("Prison Gate") }
+		local gate = game.Workspace["Prison_ITEMS"].buttons["Prison Gate"]["Prison Gate"]
+		
+		
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = gate.CFrame
+		wait(.2)
+		workspace.Remote.ItemHandler:InvokeServer(unpack(args))
+		wait(.1)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+GameTab:AddButton({
+	Name = "Destroy Toilets",
+	Callback = function()
+		for i,v in pairs(game:GetService("Workspace")["Prison_Cellblock"]["Cells_B"]:GetDescendants()) do
+			if v.Name == "Health" and v.Parent then
+				v.Parent:Destroy()
+			end
+		end
+
+        for i,v in pairs(game:GetService("Workspace")["Prison_Cellblock"]["Cells_A"]:GetDescendants()) do
+			if v.Name == "Health" and v.Parent then
+				v.Parent:Destroy()
+			end
+		end
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Local",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(893.334778, 99.9899826, 2386.13208, 0.999913335, 0, -0.0131643685, 0, 1, 0, 0.0131643685, 0, 0.999913335)
+		
+		you.CFrame = location
+  	end    
+})
+
+GameTab:AddButton({
+	Name = "Removing Door",
+	Callback = function()
+		game:GetService("Workspace").Doors:Destroy()
+		workspace.Prison_Cellblock.doors:Destroy()
+  	end    
+})
+
+ExploitsTab:AddToggle({
+	Name = "Kill Aura", Default = false, Save = true, Flag = "killaura_pl",
+	Callback = function(bool)
+		getgenv().ka = bool
+        if bool then
+            killAura()
+        end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Give Gun",
+	Default = "",
+	Options = {"Remington 870", "AK-47", "M9", "M4AI", "Riot Sheild"},
+	Callback = function(v)
+        plr = game:GetService("Players").LocalPlayer
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        function unsit()
+            plr.Character:FindFirstChildOfClass("Humanoid").Sit = false
+        end   
+        
+        function MoveTo(Pos,t)
+            unsit()
+            pcall(function()
+                if typeof(Pos):lower() == "position" then
+                    Pos = CFrame.new(Pos)
+                end
+                for i =1,3 do
+                    plr.Character:FindFirstChild("HumanoidRootPart").CFrame = Pos
+                end
+            end)
+        end
+
+        function GetGun(Item,Ignore)
+            local saved = game:GetService("Players").LocalPlayer.Character:GetPrimaryPartCFrame()
+			print(saved)
+            if workspace.Prison_ITEMS.giver:FindFirstChild(Item) and workspace.Prison_ITEMS.giver:FindFirstChild(Item):FindFirstChild("ITEMPICKUP") then
+                Item =workspace.Prison_ITEMS.giver:FindFirstChild(Item)
+                local ohInstance1 = Item:FindFirstChildOfClass("Part")
+                MoveTo(CFrame.new(ohInstance1.Position))
+                repeat wait()
+                    local ohInstance1 = Item:FindFirstChildOfClass("Part")
+                    MoveTo(CFrame.new(ohInstance1.Position))
+                    task.spawn(function()
+                        workspace.Remote.ItemHandler:InvokeServer(ohInstance1)
+                    end)
+                    wait()
+                until plr.Backpack:FindFirstChild(Item.Name) or plr.Character:FindFirstChild(Item.Name)
+            end
+            if Ignore ~= true then
+                plr.Character:SetPrimaryPartCFrame(Ignore or saved)
+            end
+        end
+
+        GetGun(v,true)
+		wait(.25)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Give Item",
+	Default = "",
+	Options = {"Key card","Crude Knife", "Hammer"},
+	Callback = function(v)
+        plr = game:GetService("Players").LocalPlayer
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        function unsit()
+            plr.Character:FindFirstChildOfClass("Humanoid").Sit = false
+        end   
+        
+        function MoveTo(Pos,t)
+            unsit()
+            pcall(function()
+                if typeof(Pos):lower() == "position" then
+                    Pos = CFrame.new(Pos)
+                end
+                for i =1,3 do
+                    plr.Character:FindFirstChild("HumanoidRootPart").CFrame = Pos
+                end
+            end)
+        end
+
+        function GetItem(Item,Ignore)
+            local saved = game:GetService("Players").LocalPlayer.Character:GetPrimaryPartCFrame()
+            if workspace.Prison_ITEMS.single:FindFirstChild(Item) and workspace.Prison_ITEMS.single:FindFirstChild(Item):FindFirstChild("ITEMPICKUP") then
+                Item =workspace.Prison_ITEMS.single:FindFirstChild(Item)
+                local ohInstance1 = Item:FindFirstChildOfClass("Part") or Item:FindFirstChildOfClass("UnionOperation")
+                MoveTo(CFrame.new(ohInstance1.Position))
+                repeat wait()
+                    local ohInstance1 = Item:FindFirstChildOfClass("Part") or Item:FindFirstChildOfClass("UnionOperation")
+                    MoveTo(CFrame.new(ohInstance1.Position))
+                    task.spawn(function()
+                        workspace.Remote.ItemHandler:InvokeServer(ohInstance1)
+                    end)
+                    wait()
+                until plr.Backpack:FindFirstChild(Item.Name) or plr.Character:FindFirstChild(Item.Name)
+            end
+            if Ignore ~= true then
+                plr.Character:SetPrimaryPartCFrame(Ignore or saved)
+            end
+        end
+
+        GetItem(v,true)
+		wait(.25)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Infinite Ammo",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Auto Fire",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Best Gun",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+			module["FireRate"] = 0.01
+			module["Spread"] = 1
+			module["Range"] = 500
+			module["ReloadTime"] = 0.01
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Lag Gun",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+			module["Bullets"] = 18
+			module["FireRate"] = 0.0000001
+			module["Spread"] = 0
+			module["Range"] = math.huge
+			module["ReloadTime"] = 0.000001
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+ExploitsTab:AddToggle({
+	Name = "LOL", Default = false, Save = true, Flag = "spamsounds_pl",
+	Callback = function(bool)
+		getgenv().spamSoond = bool
+        if bool then
+            spamSound()
+        end
+	end    
+})
+ExploitsTab:AddToggle({
+	Name = "Stop Sounds", Default = false, Save = true, Flag = "stopsounds_pl",
+	Callback = function(bool)
+		getgenv().stopSound = bool
+        if bool then
+            stopSound()
+        end
+	end    
+})
+ExploitsTab:AddLabel("Abuses RFE being disabled.")
+
+
+LocalPlrTab:AddTextbox({
+	Name = "Hitbox",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+_G.HeadSize = value
+_G.Disabled = true
+ 
+game:GetService('RunService').RenderStepped:connect(function()
+if _G.Disabled then
+for i,v in next, game:GetService('Players'):GetPlayers() do
+if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+pcall(function()
+v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+v.Character.HumanoidRootPart.Transparency = 0.7
+v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
+v.Character.HumanoidRootPart.Material = "Neon"
+v.Character.HumanoidRootPart.CanCollide = false
+end)
+end
+end
+end
+end)
+	end	  
+})
+
+LocalPlrTab:AddTextbox({
+	Name = "Speed",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+getgenv().Walkspeed = value
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end)
+	end	  
+})
+
+LocalPlrTab: AddToggle({
+	Name = "Loop speed",
+	Callback = function(state)
+		print(value)
+getgenv().loopW = state
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if loopW == true then
+            pcall(function()
+                game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = Walkspeed
+            end)
+        end
+    end)
+	end	  
+})
+
+LocalPlrTab:AddTextbox({
+	Name = "Jump",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+getgenv().Jumppower = value
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = value
+    end)
+	end	  
+})
+
+LocalPlrTab: AddToggle({
+	Name = "Loop jump power",
+	Callback = function(state)
+		print(value)
+getgenv().loopJ = state
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if loopJ == true then
+            pcall(function()
+                game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = Jumppower
+            end)
+        end
+    end)
+	end	  
+})
+
+
+LocalPlrTab:AddTextbox({
+	Name = "Fov",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+local FovNumber = value
+local Camera = workspace.CurrentCamera
+Camera.FieldOfView = FovNumber  
+	end	  
+})
+
+
+
+
+LocalPlrTab:AddToggle({
+	Name = "Auto Jump", Default = true, Save = true, Flag = "autojump_pl",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.AutoJumpEnabled = Value
+	end    
+})
+
+TPTab:AddButton({
+	Name = "Hiding Spot",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(299.237854, 208.056396, 3610.72754, 0.99927485, 5.90756777e-10, 0.038076099, -5.77617731e-10, 1, -3.56074586e-10, -0.038076099, 3.33822942e-10, 0.99927485)
+		
+		you.CFrame = location
+  	end    
+})
+
+
+TPTab:AddButton({
+	Name = "Under Bridge",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(-70.1040802, 11.0993261, 1321.80713, -0.803904712, -3.27944205e-09, -0.594758093, -2.33716602e-09, 1, -2.35487874e-09, 0.594758093, -5.03049602e-10, -0.803904712)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Criminal Base",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(-889, 121, 2074)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Police Station",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(827, 99, 2260)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Cells",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(915, 99, 2421)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Yard",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(817, 97, 2437)
+		
+		you.CFrame = location
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Cop",
+	Callback = function()
+		workspace.Remote.TeamEvent:FireServer("Bright blue")
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Prisoner",
+	Callback = function()
+        workspace.Remote.TeamEvent:FireServer("Bright orange")
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Criminal",
+	Callback = function()
+		local location =  CFrame.new(-920.399963, 96.8095779, 2138.25317, 0.00718167285, -0.0073257396, -0.999947369, -1.25340976e-05, 0.999973178, -0.00732601853, 0.999974191, 6.51548107e-05, 0.00718138926)
+
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = location
+  	end
+})
+
+TeamTab:AddLabel("TP Back To Original Location Below")
+
+TeamTab:AddButton({
+	Name = "Cop",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		
+		workspace.Remote.TeamEvent:FireServer("Bright blue")
+		wait(1.5)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Prisoner",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        workspace.Remote.TeamEvent:FireServer("Bright orange")
+		wait(1.5)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Criminal",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		local location =  CFrame.new(-920.399963, 96.8095779, 2138.25317, 0.00718167285, -0.0073257396, -0.999947369, -1.25340976e-05, 0.999973178, -0.00732601853, 0.999974191, 6.51548107e-05, 0.00718138926)
+
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = location
+		wait(1)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end
+})
+
+TPTab:AddButton({
+	Name = "Neutral Spawn Locations",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(877.398315, 27.7899818, 2352.80005, -0.000709146087, -2.35237468e-10, -0.999999762, -1.38322492e-10, 1, -2.35139436e-10, 0.999999762, 1.38155709e-10, -0.000709146087)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Cafeteria",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(931.542542, 99.9899368, 2294.22583, -0.999999285, 4.91239653e-08, 0.00120098412, 4.91538081e-08, 1, 2.48178331e-08, -0.00120098412, 2.4876849e-08, -0.999999285)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Kitchen",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(692.41095, 101.476959, 2356.29834, -0.00726743788, 0.00668678479, 0.999951243, -1.0504421e-05, 0.999977648, -0.00668703718, -0.999973595, -5.90996169e-05, -0.00726720458)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Glitch Room",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(919.5354, 99.9899368, 2233.21289, -0.999982774, -1.91831422e-08, 0.00587368105, -1.87098905e-08, 1, 8.06266911e-08, -0.00587368105, 8.05154059e-08, -0.999982774)
+		
+		you.CFrame = location
+  	end    
+})
+
+
+
+TeamTab:AddLabel("Neutral coming soon.")
+ExploitsTab:AddLabel("Warning: This will make you lag the longer you have it enabled!")
+ExploitsTab:AddLabel("Stop sounds is broken.")
+
+
+	
+
+InfoTab:AddLabel("Parceiros")
+InfoTab:AddLabel("JOAO Se Fala demais Em Man")
+InfoTab:AddLabel("Brunin, (Da Strike N prfv)")
+InfoTab:AddLabel("Eai Ricardao Dorminhoco")
+InfoTab:AddLabel("ZND Achou que ia Esquecer ne?")
+InfoTab:AddLabel("O Brogla Vai Trabalhar Safado")
+InfoTab:AddLabel("Achou que eu ia te esquecer ne Hypper?")
+InfoTab:AddLabel("Um salve pro dtz E pros cachorros Caramelo")
+
+InfoTab:AddButton({
+	Name = "Delete UI",
+	Callback = function()
+        OrionLib:Destroy()
+  	end    
+})
+
+
+local Tab = Window:MakeTab({Name = "Misc", Icon = "rbxassetid://4483345998",PremiumOnly = false })
+
+Tab: AddButton({
+	Name = "Infinite jump",
+	Callback = function(value)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BsGlitch/-nfJumps/main/BsGlitch"))()
+end
+})
+
+Tab: AddButton({
+	Name = "Sever hop",
+	Callback = function(value)
+local module = 
+loadstring(game:HttpGet"https://raw.githubusercontent.com/LeoKholYt/roblox/main/lk_serverhop.lua")()
+module:Teleport(game.PlaceId)
+end
+})
+
+Tab: AddButton({
+	Name = "Rejoin",
+	Callback = function(value)
+local ts = game:GetService("TeleportService")
+local p = game:GetService("Players").LocalPlayer
+ts:Teleport(game.PlaceId, p)
+end
+})
+
+Tab: AddToggle({
+	Name = "No clip",
+	Callback = function(s)
+getgenv().Noclip = s
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if Noclip == true then
+            game:GetService("RunService").Stepped:wait()
+            game.Players.LocalPlayer.Character.Head.CanCollide = false
+            game.Players.LocalPlayer.Character.Torso.CanCollide = false
+        end
+    end)
+end
+})
+
+Tab: AddButton({
+	Name = "Aim gun",
+	Callback = function(value)
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local GetPlayers = Players.GetPlayers
+local Camera = workspace.CurrentCamera
+local WTSP = Camera.WorldToScreenPoint
+local FindFirstChild = game.FindFirstChild
+local Vector2_new = Vector2.new
+local Mouse = LocalPlayer.GetMouse(LocalPlayer)
+function ClosestChar()
+    local Max, Close = math.huge
+    for I,V in pairs(GetPlayers(Players)) do
+        if V ~= LocalPlayer and V.Team ~= LocalPlayer.Team and V.Character then
+            local Head = FindFirstChild(V.Character, "Head")
+            if Head then
+                local Pos, OnScreen = WTSP(Camera, Head.Position)
+                if OnScreen then
+                    local Dist = (Vector2_new(Pos.X, Pos.Y) - Vector2_new(Mouse.X, Mouse.Y)).Magnitude
+                    if Dist < Max then
+                        Max = Dist
+                        Close = V.Character
+                    end
+                end
+            end
+        end
+    end
+    return Close
+end
+
+local MT = getrawmetatable(game)
+local __namecall = MT.__namecall
+setreadonly(MT, false)
+MT.__namecall = newcclosure(function(self, ...)
+    local Method = getnamecallmethod()
+    if Method == "FindPartOnRay" and not checkcaller() and tostring(getfenv(0).script) == "GunInterface" then
+        local Character = ClosestChar()
+        if Character then
+            return Character.Head, Character.Head.Position
+        end
+    end
+
+    return __namecall(self, ...)
+end)
+setreadonly(MT, true)
+end
+})
+
+local GetName = game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId)
+
+getgenv().spamSoond = false
+getgenv().stopsounds = false
+getgenv().ka = false
+
+function stopSound()
+	while getgenv().stopsounds == true do
+		local class_check = game.IsA
+		local sound = Instance.new('Sound')
+		local sound_stop = sound.Stop
+		local get_descendants = game.GetDescendants
+
+		for i,v in next, get_descendants(game) do 
+			if class_check(v,"Sound") then
+				sound_stop(v)
+			end
+		end
+
+		get_descendants = nil
+		sound:Remove()
+		sound = nil 
+		get_descendants = nil
+		sound_stop = nil
+        task.wait()
+	end
+end
+
+function spamSound()
+	while getgenv().spamSoond == true do
+		local class_check = game.IsA
+		local sound = Instance.new('Sound')
+		local sound_stop = sound.Play
+		local get_descendants = game.GetDescendants
+
+		for i,v in next, get_descendants(game) do 
+			if class_check(v,"Sound") then
+				sound_stop(v)
+			end
+		end
+
+		get_descendants = nil
+		sound:Remove()
+		get_descendants = nil
+		sound_stop = nil
+        task.wait()
+	end
+end
+
+function killAura()
+	spawn(function()
+		while getgenv().ka == true do
+			local Pop = game:GetService("Players"):GetPlayers()
+			for _,player in next,game:GetService'Players':GetPlayers() do
+				if player ~= game:GetService'Players'.LocalPlayer then
+					local args = { [1] = player }
+					local Distance = (player.Character:FindFirstChildOfClass("Part").Position - game.Players.LocalPlayer.Character:FindFirstChildOfClass("Part").Position).magnitude
+				
+					if Distance <= 17 then
+						for player = 1,25 do
+							game:GetService('ReplicatedStorage').meleeEvent:FireServer(unpack(args))
+						end
+					end
+				end 
+			end
+			wait()
+		end
+	end)
+end
+
+local LocalPlrTab = Window:MakeTab({Name = "Local Player", Icon = "rbxassetid://15862434941",PremiumOnly = false })
+local GunTab = Window:MakeTab({Name = "Guns", Icon = "rbxassetid://15862513462",PremiumOnly = false })
+local TPTab = Window:MakeTab({Name = "Teleport", Icon = "rbxassetid://15841341821",PremiumOnly = false })
+local GameTab = Window:MakeTab({Name = "Game", Icon = "rbxassetid://15885360708",PremiumOnly = false })
+local TeamTab = Window:MakeTab({Name = "Teams", Icon = "rbxassetid://15862677356",PremiumOnly = false })
+local ExploitsTab = Window:MakeTab({Name = "Exploits", Icon = "rbxassetid://15841340999",PremiumOnly = false })
+local InfoTab = Window:MakeTab({Name = "Creditos", Icon = "rbxassetid://15841490359",PremiumOnly = false })
+
+
+GameTab:AddButton({
+	Name = "Open Gate",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		local args = { [1] = workspace.Prison_ITEMS.buttons:FindFirstChild("Prison Gate"):FindFirstChild("Prison Gate") }
+		local gate = game.Workspace["Prison_ITEMS"].buttons["Prison Gate"]["Prison Gate"]
+		
+		
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = gate.CFrame
+		wait(.2)
+		workspace.Remote.ItemHandler:InvokeServer(unpack(args))
+		wait(.1)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+GameTab:AddButton({
+	Name = "Destroy Toilets",
+	Callback = function()
+		for i,v in pairs(game:GetService("Workspace")["Prison_Cellblock"]["Cells_B"]:GetDescendants()) do
+			if v.Name == "Health" and v.Parent then
+				v.Parent:Destroy()
+			end
+		end
+
+        for i,v in pairs(game:GetService("Workspace")["Prison_Cellblock"]["Cells_A"]:GetDescendants()) do
+			if v.Name == "Health" and v.Parent then
+				v.Parent:Destroy()
+			end
+		end
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Nexus",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(893.334778, 99.9899826, 2386.13208, 0.999913335, 0, -0.0131643685, 0, 1, 0, 0.0131643685, 0, 0.999913335)
+		
+		you.CFrame = location
+  	end    
+})
+
+GameTab:AddButton({
+	Name = "Remove Doors",
+	Callback = function()
+		game:GetService("Workspace").Doors:Destroy()
+		workspace.Prison_Cellblock.doors:Destroy()
+  	end    
+})
+
+ExploitsTab:AddToggle({
+	Name = "Kill Aura", Default = false, Save = true, Flag = "killaura_pl",
+	Callback = function(bool)
+		getgenv().ka = bool
+        if bool then
+            killAura()
+        end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Give Gun",
+	Default = "",
+	Options = {"Remington 870", "AK-47", "M9", "M4AI", "Riot Sheild"},
+	Callback = function(v)
+        plr = game:GetService("Players").LocalPlayer
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        function unsit()
+            plr.Character:FindFirstChildOfClass("Humanoid").Sit = false
+        end   
+        
+        function MoveTo(Pos,t)
+            unsit()
+            pcall(function()
+                if typeof(Pos):lower() == "position" then
+                    Pos = CFrame.new(Pos)
+                end
+                for i =1,3 do
+                    plr.Character:FindFirstChild("HumanoidRootPart").CFrame = Pos
+                end
+            end)
+        end
+
+        function GetGun(Item,Ignore)
+            local saved = game:GetService("Players").LocalPlayer.Character:GetPrimaryPartCFrame()
+			print(saved)
+            if workspace.Prison_ITEMS.giver:FindFirstChild(Item) and workspace.Prison_ITEMS.giver:FindFirstChild(Item):FindFirstChild("ITEMPICKUP") then
+                Item =workspace.Prison_ITEMS.giver:FindFirstChild(Item)
+                local ohInstance1 = Item:FindFirstChildOfClass("Part")
+                MoveTo(CFrame.new(ohInstance1.Position))
+                repeat wait()
+                    local ohInstance1 = Item:FindFirstChildOfClass("Part")
+                    MoveTo(CFrame.new(ohInstance1.Position))
+                    task.spawn(function()
+                        workspace.Remote.ItemHandler:InvokeServer(ohInstance1)
+                    end)
+                    wait()
+                until plr.Backpack:FindFirstChild(Item.Name) or plr.Character:FindFirstChild(Item.Name)
+            end
+            if Ignore ~= true then
+                plr.Character:SetPrimaryPartCFrame(Ignore or saved)
+            end
+        end
+
+        GetGun(v,true)
+		wait(.25)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Give Item",
+	Default = "",
+	Options = {"Key card","Crude Knife", "Hammer"},
+	Callback = function(v)
+        plr = game:GetService("Players").LocalPlayer
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        function unsit()
+            plr.Character:FindFirstChildOfClass("Humanoid").Sit = false
+        end   
+        
+        function MoveTo(Pos,t)
+            unsit()
+            pcall(function()
+                if typeof(Pos):lower() == "position" then
+                    Pos = CFrame.new(Pos)
+                end
+                for i =1,3 do
+                    plr.Character:FindFirstChild("HumanoidRootPart").CFrame = Pos
+                end
+            end)
+        end
+
+        function GetItem(Item,Ignore)
+            local saved = game:GetService("Players").LocalPlayer.Character:GetPrimaryPartCFrame()
+            if workspace.Prison_ITEMS.single:FindFirstChild(Item) and workspace.Prison_ITEMS.single:FindFirstChild(Item):FindFirstChild("ITEMPICKUP") then
+                Item =workspace.Prison_ITEMS.single:FindFirstChild(Item)
+                local ohInstance1 = Item:FindFirstChildOfClass("Part") or Item:FindFirstChildOfClass("UnionOperation")
+                MoveTo(CFrame.new(ohInstance1.Position))
+                repeat wait()
+                    local ohInstance1 = Item:FindFirstChildOfClass("Part") or Item:FindFirstChildOfClass("UnionOperation")
+                    MoveTo(CFrame.new(ohInstance1.Position))
+                    task.spawn(function()
+                        workspace.Remote.ItemHandler:InvokeServer(ohInstance1)
+                    end)
+                    wait()
+                until plr.Backpack:FindFirstChild(Item.Name) or plr.Character:FindFirstChild(Item.Name)
+            end
+            if Ignore ~= true then
+                plr.Character:SetPrimaryPartCFrame(Ignore or saved)
+            end
+        end
+
+        GetItem(v,true)
+		wait(.25)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Infinite Ammo",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Auto Fire",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "OP Gun",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+			module["FireRate"] = 0.01
+			module["Spread"] = 1
+			module["Range"] = 500
+			module["ReloadTime"] = 0.01
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+GunTab:AddDropdown({
+	Name = "Lag Gun",
+	Default = "",
+	Options = {"Taser","Remington 870", "AK-47", "M9", "M4AI"},
+	Callback = function(v)
+		local module = nil
+		if game:GetService("Players").LocalPlayer.Backpack:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Backpack[v].GunStates)
+		elseif game:GetService("Players").LocalPlayer.Character:FindFirstChild(v) then
+			module = require(game:GetService("Players").LocalPlayer.Character[v].GunStates)
+		end
+
+		if module then
+			module["MaxAmmo"] = math.huge
+			module["CurrentAmmo"] = math.huge
+			module["StoredAmmo"] = math.huge
+			module["Bullets"] = 18
+			module["FireRate"] = 0.0000001
+			module["Spread"] = 0
+			module["Range"] = math.huge
+			module["ReloadTime"] = 0.000001
+			module["AutoFire"] = true
+		end
+	end    
+})
+
+ExploitsTab:AddToggle({
+	Name = "Spam Sounds", Default = false, Save = true, Flag = "spamsounds_pl",
+	Callback = function(bool)
+		getgenv().spamSoond = bool
+        if bool then
+            spamSound()
+        end
+	end    
+})
+ExploitsTab:AddToggle({
+	Name = "Stop Sounds", Default = false, Save = true, Flag = "stopsounds_pl",
+	Callback = function(bool)
+		getgenv().stopSound = bool
+        if bool then
+            stopSound()
+        end
+	end    
+})
+ExploitsTab:AddLabel("Abuses RFE being disabled.")
+
+
+LocalPlrTab:AddTextbox({
+	Name = "Hitbox",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+_G.HeadSize = value
+_G.Disabled = true
+ 
+game:GetService('RunService').RenderStepped:connect(function()
+if _G.Disabled then
+for i,v in next, game:GetService('Players'):GetPlayers() do
+if v.Name ~= game:GetService('Players').LocalPlayer.Name then
+pcall(function()
+v.Character.HumanoidRootPart.Size = Vector3.new(_G.HeadSize,_G.HeadSize,_G.HeadSize)
+v.Character.HumanoidRootPart.Transparency = 0.7
+v.Character.HumanoidRootPart.BrickColor = BrickColor.new("Really blue")
+v.Character.HumanoidRootPart.Material = "Neon"
+v.Character.HumanoidRootPart.CanCollide = false
+end)
+end
+end
+end
+end)
+	end	  
+})
+
+LocalPlrTab:AddTextbox({
+	Name = "Speed",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+getgenv().Walkspeed = value
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = value
+    end)
+	end	  
+})
+
+LocalPlrTab: AddToggle({
+	Name = "Loop speed",
+	Callback = function(state)
+		print(value)
+getgenv().loopW = state
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if loopW == true then
+            pcall(function()
+                game:GetService("Players").LocalPlayer.Character.Humanoid.WalkSpeed = Walkspeed
+            end)
+        end
+    end)
+	end	  
+})
+
+LocalPlrTab:AddTextbox({
+	Name = "Jump",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+getgenv().Jumppower = value
+    pcall(function()
+        game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = value
+    end)
+	end	  
+})
+
+LocalPlrTab: AddToggle({
+	Name = "Loop jump power",
+	Callback = function(state)
+		print(value)
+getgenv().loopJ = state
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if loopJ == true then
+            pcall(function()
+                game:GetService("Players").LocalPlayer.Character.Humanoid.JumpPower = Jumppower
+            end)
+        end
+    end)
+	end	  
+})
+
+
+LocalPlrTab:AddTextbox({
+	Name = "Fov",
+	Default = "",
+	TextDisappear = true,
+	Callback = function(value)
+		print(value)
+local FovNumber = value
+local Camera = workspace.CurrentCamera
+Camera.FieldOfView = FovNumber  
+	end	  
+})
+
+
+
+
+LocalPlrTab:AddToggle({
+	Name = "Auto Jump", Default = true, Save = true, Flag = "autojump_pl",
+	Callback = function(Value)
+		game.Players.LocalPlayer.Character.Humanoid.AutoJumpEnabled = Value
+	end    
+})
+
+TPTab:AddButton({
+	Name = "Hiding Spot",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(299.237854, 208.056396, 3610.72754, 0.99927485, 5.90756777e-10, 0.038076099, -5.77617731e-10, 1, -3.56074586e-10, -0.038076099, 3.33822942e-10, 0.99927485)
+		
+		you.CFrame = location
+  	end    
+})
+
+
+TPTab:AddButton({
+	Name = "Under Bridge",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(-70.1040802, 11.0993261, 1321.80713, -0.803904712, -3.27944205e-09, -0.594758093, -2.33716602e-09, 1, -2.35487874e-09, 0.594758093, -5.03049602e-10, -0.803904712)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Criminal Base",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(-889, 121, 2074)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Police Station",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(827, 99, 2260)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Cells",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(915, 99, 2421)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Yard",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(817, 97, 2437)
+		
+		you.CFrame = location
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Cop",
+	Callback = function()
+		workspace.Remote.TeamEvent:FireServer("Bright blue")
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Prisoner",
+	Callback = function()
+        workspace.Remote.TeamEvent:FireServer("Bright orange")
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Criminal",
+	Callback = function()
+		local location =  CFrame.new(-920.399963, 96.8095779, 2138.25317, 0.00718167285, -0.0073257396, -0.999947369, -1.25340976e-05, 0.999973178, -0.00732601853, 0.999974191, 6.51548107e-05, 0.00718138926)
+
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = location
+  	end
+})
+
+TeamTab:AddLabel("TP Back To Original Location Below")
+
+TeamTab:AddButton({
+	Name = "Cop",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		
+		workspace.Remote.TeamEvent:FireServer("Bright blue")
+		wait(1.5)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Prisoner",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+
+        workspace.Remote.TeamEvent:FireServer("Bright orange")
+		wait(1.5)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end    
+})
+
+TeamTab:AddButton({
+	Name = "Criminal",
+	Callback = function()
+		local currentCframe = game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame
+		local location =  CFrame.new(-920.399963, 96.8095779, 2138.25317, 0.00718167285, -0.0073257396, -0.999947369, -1.25340976e-05, 0.999973178, -0.00732601853, 0.999974191, 6.51548107e-05, 0.00718138926)
+
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = location
+		wait(1)
+		game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = currentCframe
+  	end
+})
+
+TPTab:AddButton({
+	Name = "Neutral Spawn Locations",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(877.398315, 27.7899818, 2352.80005, -0.000709146087, -2.35237468e-10, -0.999999762, -1.38322492e-10, 1, -2.35139436e-10, 0.999999762, 1.38155709e-10, -0.000709146087)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Cafeteria",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(931.542542, 99.9899368, 2294.22583, -0.999999285, 4.91239653e-08, 0.00120098412, 4.91538081e-08, 1, 2.48178331e-08, -0.00120098412, 2.4876849e-08, -0.999999285)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Kitchen",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(692.41095, 101.476959, 2356.29834, -0.00726743788, 0.00668678479, 0.999951243, -1.0504421e-05, 0.999977648, -0.00668703718, -0.999973595, -5.90996169e-05, -0.00726720458)
+		
+		you.CFrame = location
+  	end    
+})
+
+TPTab:AddButton({
+	Name = "Glitch Room",
+	Callback = function()
+        local you = game.Players.LocalPlayer.Character.HumanoidRootPart
+		local location = CFrame.new(919.5354, 99.9899368, 2233.21289, -0.999982774, -1.91831422e-08, 0.00587368105, -1.87098905e-08, 1, 8.06266911e-08, -0.00587368105, 8.05154059e-08, -0.999982774)
+		
+		you.CFrame = location
+  	end    
+})
+
+
+
+TeamTab:AddLabel("Neutral coming soon.")
+ExploitsTab:AddLabel("Warning: This will make you lag the longer you have it enabled!")
+ExploitsTab:AddLabel("Stop sounds is broken.")
+
+
+	
+
+InfoTab:AddLabel("Feito Por Igor ")
+InfoTab:AddLabel("Desenvoldores | Igor | Miguel")
+InfoTab:AddLabel("Nome Discord | zezinzedamanga")
+
+
+InfoTab:AddButton({
+	Name = "Delete UI",
+	Callback = function()
+        OrionLib:Destroy()
+  	end    
+})
+
+
+local Tab = Window:MakeTab({Name = "Misc | Prison Life", Icon = "rbxassetid://4483345998",PremiumOnly = false })
+
+Tab: AddButton({
+	Name = "Pulos Infinito",
+	Callback = function(value)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BsGlitch/-nfJumps/main/BsGlitch"))()
+end
+})
+
+Tab: AddButton({
+	Name = "Entrar Em Servidor Cheio",
+	Callback = function(value)
+local module = 
+loadstring(game:HttpGet"https://raw.githubusercontent.com/LeoKholYt/roblox/main/lk_serverhop.lua")()
+module:Teleport(game.PlaceId)
+end
+})
+
+Tab: AddButton({
+	Name = "Relogar",
+	Callback = function(value)
+local ts = game:GetService("TeleportService")
+local p = game:GetService("Players").LocalPlayer
+ts:Teleport(game.PlaceId, p)
+end
+})
+
+Tab: AddToggle({
+	Name = "No clip",
+	Callback = function(s)
+getgenv().Noclip = s
+    game:GetService("RunService").Heartbeat:Connect(function()
+        if Noclip == true then
+            game:GetService("RunService").Stepped:wait()
+            game.Players.LocalPlayer.Character.Head.CanCollide = false
+            game.Players.LocalPlayer.Character.Torso.CanCollide = false
+        end
+    end)
+end
+})
+
+Tab: AddButton({
+	Name = "Aimbot com arma",
+	Callback = function(value)
+local Players = game.Players
+local LocalPlayer = Players.LocalPlayer
+local GetPlayers = Players.GetPlayers
+local Camera = workspace.CurrentCamera
+local WTSP = Camera.WorldToScreenPoint
+local FindFirstChild = game.FindFirstChild
+local Vector2_new = Vector2.new
+local Mouse = LocalPlayer.GetMouse(LocalPlayer)
+function ClosestChar()
+    local Max, Close = math.huge
+    for I,V in pairs(GetPlayers(Players)) do
+        if V ~= LocalPlayer and V.Team ~= LocalPlayer.Team and V.Character then
+            local Head = FindFirstChild(V.Character, "Head")
+            if Head then
+                local Pos, OnScreen = WTSP(Camera, Head.Position)
+                if OnScreen then
+                    local Dist = (Vector2_new(Pos.X, Pos.Y) - Vector2_new(Mouse.X, Mouse.Y)).Magnitude
+                    if Dist < Max then
+                        Max = Dist
+                        Close = V.Character
+                    end
+                end
+            end
+        end
+    end
+    return Close
+end
+
+local MT = getrawmetatable(game)
+local __namecall = MT.__namecall
+setreadonly(MT, false)
+MT.__namecall = newcclosure(function(self, ...)
+    local Method = getnamecallmethod()
+    if Method == "FindPartOnRay" and not checkcaller() and tostring(getfenv(0).script) == "GunInterface" then
+        local Character = ClosestChar()
+        if Character then
+            return Character.Head, Character.Head.Position
+        end
+    end
+
+    return __namecall(self, ...)
+end)
+setreadonly(MT, true)
+end
+})
+
+Tab: AddButton({
+	Name = "Esp Bonito",
+	Callback = function()
+local FillColor = Color3.fromRGB(65,255,0)
+local DepthMode = "AlwaysOnTop"
+local FillTransparency = 0.5
+local OutlineColor = Color3.fromRGB(255,255,255)
+local OutlineTransparency = 0
+
+local CoreGui = game:FindService("CoreGui")
+local Players = game:FindService("Players")
+local lp = Players.LocalPlayer
+local connections = {}
+
+local Storage = Instance.new("Folder")
+Storage.Parent = CoreGui
+Storage.Name = "Highlight_Storage"
+
+local function Highlight(plr)
+    local Highlight = Instance.new("Highlight")
+    Highlight.Name = plr.Name
+    Highlight.FillColor = FillColor
+    Highlight.DepthMode = DepthMode
+    Highlight.FillTransparency = FillTransparency
+    Highlight.OutlineColor = OutlineColor
+    Highlight.OutlineTransparency = 0
+    Highlight.Parent = Storage
+    
+    local plrchar = plr.Character
+    if plrchar then
+        Highlight.Adornee = plrchar
+    end
+
+    connections[plr] = plr.CharacterAdded:Connect(function(char)
+        Highlight.Adornee = char
+    end)
+end
+
+Players.PlayerAdded:Connect(Highlight)
+for i,v in next, Players:GetPlayers() do
+    Highlight(v)
+end
+
+Players.PlayerRemoving:Connect(function(plr)
+    local plrname = plr.Name
+    if Storage[plrname] then
+        Storage[plrname]:Destroy()
+    end
+    if connections[plr] then
+        connections[plr]:Disconnect()
+    end
+end)
+end
+})
+Tab: AddButton({
+	Name = "Tools item",
+	Callback = function(value)
+backpack = game:GetService("Players").LocalPlayer.Backpack
+
+hammer = Instance.new("HopperBin")
+hammer.Name = "Hammer"
+hammer.BinType = 4
+hammer.Parent = backpack
+
+cloneTool = Instance.new("HopperBin")
+cloneTool.Name = "Clone"
+cloneTool.BinType = 3
+cloneTool.Parent = backpack
+end
+})
+Tab: AddButton({
+	Name = "Tools tp",
+	Callback = function(value)
+mouse = game.Players.LocalPlayer:GetMouse()
+tool = Instance.new("Tool")
+tool.RequiresHandle = false
+tool.Name = "Click TP"
+tool.Activated:connect(function()
+local pos = mouse.Hit+Vector3.new(0,2.5,0)
+pos = CFrame.new(pos.X,pos.Y,pos.Z)
+game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = pos
+end)
+tool.Parent = game.Players.LocalPlayer.Backpack
+end
+})
+
+Tab: AddButton({
+	Name = "Car fly",
+	Callback = function(value)
+loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/thaibao/main/Carflylol"))()
+end
+})
+OrionLib:Init()
